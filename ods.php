@@ -7,6 +7,30 @@ class ods {
     public function addCell($sheet, $row, $column, $value, $type, $border = 0, $width = 1) {
         $this->sheets[$sheet]['rows'][$row][$column]['cellProp'] = array('cellType'=>$type, 'cellValue'=>$value, 'xml:id'=>$column, 'cellBorder'=>$border);
     }
+
+    public function addArray($sheet, $array) {
+        $type = array_keys($array);
+        print_r(array_keys($array));
+        $i = 1;
+        foreach ($array as $key => $job) {
+
+            foreach ($job as $shift) {
+                if ($shift[6] == 'Checker') {
+                    $this->addCell($sheet, $i, 1, $shift[7], 'string');
+                    $this->addCell($sheet, $i, 2, $shift[2], 'string');
+                    $this->addCell($sheet, $i, 3, $shift[3], 'string');
+                    $i++;
+                } elseif ($shift[6] == 'Courtesy Clerk') {
+                    $this->addCell($sheet, $i, 1, $shift[7], 'string');
+                    $this->addCell($sheet, $i, 2, $shift[2], 'string');
+                    $this->addCell($sheet, $i, 3, $shift[3], 'string');
+                    $i++;
+                }
+            }
+        }
+
+    }
+
     private function addBorder($border) {
         //ce1=all ce2=top ce3=right ce4=bottom ce5=left ce6=top,left ce7=top,right ce8=bottom,right ce9=bottom,left
         return '<table:table-cell table:style-name="ce' . $border . '" ';
@@ -94,8 +118,8 @@ class ods {
         chmod($path, 0777);
     }
 }
-$obj = new ods;
-$obj->addCell(1,1,1,'test','string', 4);
-$path = 'uploads/file.ods';
-$obj->exportOds($path);
+//$obj = new ods;
+//$obj->addCell(1,1,1,'test','string', 4);
+//$path = 'uploads/file.ods';
+//$obj->exportOds($path);
 ?>
