@@ -4,31 +4,35 @@ class ods {
         $this->content = '<?xml version="1.0" encoding="UTF-8"?><office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0" xmlns:number="urn:oasis:names:tc:opendocument:xmlns:datastyle:1.0" xmlns:presentation="urn:oasis:names:tc:opendocument:xmlns:presentation:1.0" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:chart="urn:oasis:names:tc:opendocument:xmlns:chart:1.0" xmlns:dr3d="urn:oasis:names:tc:opendocument:xmlns:dr3d:1.0" xmlns:math="http://www.w3.org/1998/Math/MathML" xmlns:form="urn:oasis:names:tc:opendocument:xmlns:form:1.0" xmlns:script="urn:oasis:names:tc:opendocument:xmlns:script:1.0" xmlns:ooo="http://openoffice.org/2004/office" xmlns:ooow="http://openoffice.org/2004/writer" xmlns:oooc="http://openoffice.org/2004/calc" xmlns:dom="http://www.w3.org/2001/xml-events" xmlns:xforms="http://www.w3.org/2002/xforms" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rpt="http://openoffice.org/2005/report" xmlns:of="urn:oasis:names:tc:opendocument:xmlns:of:1.2" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:grddl="http://www.w3.org/2003/g/data-view#" xmlns:tableooo="http://openoffice.org/2009/table" xmlns:drawooo="http://openoffice.org/2010/draw" xmlns:calcext="urn:org:documentfoundation:names:experimental:calc:xmlns:calcext:1.0" xmlns:loext="urn:org:documentfoundation:names:experimental:office:xmlns:loext:1.0" xmlns:field="urn:openoffice:names:experimental:ooo-ms-interop:xmlns:field:1.0" xmlns:formx="urn:openoffice:names:experimental:ooxml-odf-interop:xmlns:form:1.0" xmlns:css3t="http://www.w3.org/TR/css3-text/" office:version="1.2">';
 
     }
-    public function addCell($sheet, $row, $column, $value, $type, $border = 0, $width = 1) {
-        $this->sheets[$sheet]['rows'][$row][$column]['cellProp'] = array('cellType'=>$type, 'cellValue'=>$value, 'xml:id'=>$column, 'cellBorder'=>$border);
+    public function addCell($sheet, $row, $column, $value, $type, $border = 0, $width = 1, $spanCell = 1, $repeat = 1) {
+        $this->sheets[$sheet]['rows'][$row][$column]['cellProp'] = array('cellType'=>$type, 'cellValue'=>$value, 'xml:id'=>$column, 'cellBorder'=>$border, 'cellSpan'=> $spanCell, 'repeat'=> $repeat);
     }
 
-    public function addArray($sheet, $array) {
-        $type = array_keys($array);
-        print_r(array_keys($array));
-        $i = 1;
-        foreach ($array as $key => $job) {
-
-            foreach ($job as $shift) {
-                if ($shift[6] == 'Checker') {
-                    $this->addCell($sheet, $i, 1, $shift[7], 'string');
-                    $this->addCell($sheet, $i, 2, $shift[2], 'string');
-                    $this->addCell($sheet, $i, 3, $shift[3], 'string');
-                    $i++;
-                } elseif ($shift[6] == 'Courtesy Clerk') {
-                    $this->addCell($sheet, $i, 1, $shift[7], 'string');
-                    $this->addCell($sheet, $i, 2, $shift[2], 'string');
-                    $this->addCell($sheet, $i, 3, $shift[3], 'string');
-                    $i++;
-                }
+    public function addArray($sheet, $array, $start, $column, $addBlank = NULL, $emptyBorder) {
+        if ($addBlank != NULL) {
+            for ($i = 1; $i <= $addBlank; $i++) {
+                $this->addCell(0, $start, $column, ' ', 'string');
+                $start++;
             }
         }
+        foreach ($array as $shift) {
+            foreach ($shift as $key => $cell) {
+                $key = $key + $column;  //$key is either (0,1,2) and column is sent.  To put cells to the right of cell that are already created need to add the column+start point.
+                $this->addCell($sheet, $start, $key, $cell, 'string', 1);
+            }
+            $start++;
+        }
+        for ($i = 1; $i <= $emptyBorder; $i++) {
+            $this->addCell(0, $start, $column, ' ', 'string', 1, 1, 1, 3);
+            $start++;
+        }
+    }
 
+    public function getStartRow($number) {
+        foreach ($this->sheets[$number]['rows'] as $key => $value) {
+            $key = $key;
+        }
+        return $key + 1;
     }
 
     private function addBorder($border) {
@@ -41,20 +45,30 @@ class ods {
         $string = $this->content;
         $string .= '<office:scripts/><office:font-face-decls></office:font-face-decls>';
         $string .= '<office:automatic-styles>';
+        $string .= '<style:style style:name="co1" style:family="table-column"><style:table-column-properties fo:break-before="auto" style:column-width=".95in"/></style:style>';
+        $string .= '<style:style style:name="co2" style:family="table-column"><style:table-column-properties fo:break-before="auto" style:column-width=".5in"/></style:style>';
+        $string .= '<style:style style:name="co3" style:family="table-column"><style:table-column-properties fo:break-before="auto" style:column-width=".5in"/></style:style>';
         $string .= '<style:style style:name="ce0" style:family="table-cell" style:parent-style-name="Default"><style:table-cell-properties fo:border="none"/></style:style><style:style style:name="ce1" style:family="table-cell" style:parent-style-name="Default"><style:table-cell-properties fo:border="0.06pt solid #000000"/></style:style><style:style style:name="ce2" style:family="table-cell" style:parent-style-name="Default"><style:table-cell-properties fo:border-bottom="none" fo:border-left="none" fo:border-right="none" fo:border-top="0.06pt solid #000000"/></style:style><style:style style:name="ce3" style:family="table-cell" style:parent-style-name="Default"><style:table-cell-properties fo:border-bottom="none" fo:border-left="none" fo:border-right="0.06pt solid #000000" fo:border-top="none"/></style:style><style:style style:name="ce4" style:family="table-cell" style:parent-style-name="Default"><style:table-cell-properties fo:border-bottom="0.06pt solid #000000" fo:border-left="none" fo:border-right="none0" fo:border-top="none"/></style:style><style:style style:name="ce5" style:family="table-cell" style:parent-style-name="Default"><style:table-cell-properties fo:border-bottom="none" fo:border-left="0.06pt solid #000000" fo:border-right="none" fo:border-top="none"/></style:style><style:style style:name="ce6" style:family="table-cell" style:parent-style-name="Default"><style:table-cell-properties fo:border-bottom="none" fo:border-left="0.06pt solid #000000" fo:border-right="none" fo:border-top="0.06pt solid #000000"/></style:style><style:style style:name="ce7" style:family="table-cell" style:parent-style-name="Default"><style:table-cell-properties fo:border-bottom="none" fo:border-left="none" fo:border-right="0.06pt solid #000000" fo:border-top="0.06pt solid #000000"/></style:style><style:style style:name="ce8" style:family="table-cell" style:parent-style-name="Default"><style:table-cell-properties fo:border-bottom="0.06pt solid #000000" fo:border-left="none" fo:border-right="0.06pt solid #000000" fo:border-top="none"/></style:style><style:style style:name="ce9" style:family="table-cell" style:parent-style-name="Default"><style:table-cell-properties fo:border-bottom="0.06pt solid #000000" fo:border-left="0.06pt solid #000000" fo:border-right="none" fo:border-top="none"/></style:style>';
         $string .= '</office:automatic-styles>';
-        //print_r($sheetArr);
         $string .= '<office:body><office:spreadsheet>';
         foreach ($sheetArr as $sheetIndex => $sheetContent) {
             $string .= '<table:table table:name="' . $sheetIndex . '" table:style-name="ta1">';
+            $string .= '<table:table-column table:style-name="co1"/>';
+            $string .= '<table:table-column table:style-name="co2"/>';
+            $string .= '<table:table-column table:style-name="co3"/>';
             //code for a cell taking up more then one column
+            //$string .= '<table:table-column table:number-columns-repeated="3"/>';
             foreach ($sheetContent['rows'] as $rowIndex => $rowContent) {
                 $string .= '<table:table-row>';
                 foreach ($rowContent as $cellIndex => $a) {
-                    $string .= $this->addBorder($a['cellProp']['cellBorder']);
-                    $string .= 'office:value-type ="' . $a['cellProp']['cellType'] . '">';
-                    $string .= '<text:p>' . $a['cellProp']['cellValue'] . '</text:p>';
-                    $string .= '</table:table-cell>';
+
+                    for ($i = 1; $i <= $a['cellProp']['repeat']; $i++) {
+                        $string .= $this->addBorder($a['cellProp']['cellBorder']);
+                        //$string .= 'table:number-columns-spanned="' . $a['cellProp']['cellSpan'] . '" ';
+                        $string .= 'office:value-type ="' . $a['cellProp']['cellType'] . '">';
+                        $string .= '<text:p>' . $a['cellProp']['cellValue'] . '</text:p>';
+                        $string .= '</table:table-cell>';
+                    }
                 }
                 $string .= '</table:table-row>';
             }
